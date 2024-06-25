@@ -21,6 +21,8 @@ def main(**kwargs):
 
 
 # %%
+    # preset quantities
+    gamma = kwargs['gamma'] #default 5/3
 
     tstathdf = '/Users/hyw/Desktop/ERM/athenak-erm/build-mdisk/src/mhdtest/bin/cbd.mhd_w_bcc.02330.athdf'
     tstathdf = '/Users/hyw/CBD_Summit/cbd.mhd_w_bcc.00020.athdf'
@@ -63,8 +65,8 @@ def main(**kwargs):
                 return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
             case "br":
                 FigID = r'$B_r$'
-                vmin, vmax = -1,1
-                norm = colors.Normalize(vmin=vmin, vmax=vmax)
+                vmin, vmax = -10,10
+                norm = colors.SymLogNorm(vmin=vmin, vmax=vmax,linthresh=1e-3)
 
                 bx_zmid = tst['bcc1'][zmid,:,:]
                 by_zmid = tst['bcc2'][zmid,:,:]
@@ -84,8 +86,8 @@ def main(**kwargs):
                 return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
             case "bphi":
                 FigID = r'$B_{\phi}$'
-                vmin, vmax = -1,1
-                norm = colors.Normalize(vmin=vmin, vmax=vmax)
+                vmin, vmax = -10,10
+                norm = colors.SymLogNorm(vmin=vmin, vmax=vmax,linthresh=1e-3)
 
                 bx_zmid = tst['bcc1'][zmid,:,:]
                 by_zmid = tst['bcc2'][zmid,:,:]
@@ -115,22 +117,134 @@ def main(**kwargs):
                 quant_zmid, quant_ymid, quant_xmid  =  bz_zmid, bz_ymid, bz_xmid
 
                 return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
-            case "vel":
-                vmin, vmax = 1e-5,1
-                norm = colors.Normalize(vmin=vmin, vmax=vmax)
+            case "vr":
+                FigID = r'$v_r$'
+                vmin, vmax = -10, 10
+                norm = colors.SymLogNorm(vmin=vmin, vmax=vmax,linthresh=1e-3)
+
+                vx_zmid = tst['vel1'][zmid,:,:]
+                vy_zmid = tst['vel2'][zmid,:,:]
+                
+                vx_ymid = tst['vel1'][:,ymid,:]
+                vy_ymid = tst['vel2'][:,ymid,:]
+
+                vx_xmid = tst['vel1'][:,:,xmid]
+                vy_xmid = tst['vel2'][:,:,xmid]
+
+                vr_zmid = vx_zmid*cosphi[zmid,:,:] + vy_zmid*sinphi[zmid,:,:]
+                vr_ymid = vx_ymid*cosphi[:,ymid,:] + vy_ymid*sinphi[:,ymid,:]
+                vr_xmid = vx_xmid*cosphi[:,:,xmid] + vy_xmid*sinphi[:,:,xmid]
+
+                quant_zmid, quant_ymid, quant_xmid  =  vr_zmid, vr_ymid, vr_xmid
+
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case "vphi":
+                FigID = r'$v_{\phi}$'
+                vmin, vmax = -10, 10
+                norm = colors.SymLogNorm(vmin=vmin, vmax=vmax,linthresh=1e-3)
+
+                vx_zmid = tst['velx'][zmid,:,:]
+                vy_zmid = tst['vely'][zmid,:,:]
+
+                vx_ymid = tst['velx'][:,ymid,:]
+                vy_ymid = tst['vely'][:,ymid,:]
+
+                vx_xmid = tst['velx'][:,:,xmid]
+                vy_xmid = tst['vely'][:,:,xmid]
+
+                vphi_zmid = -vx_zmid*sinphi[zmid,:,:] + vy_zmid*cosphi[zmid,:,:]
+                vphi_ymid = -vx_ymid*sinphi[:,ymid,:] + vy_ymid*cosphi[:,ymid,:]
+                vphi_xmid = -vx_xmid*sinphi[:,:,xmid] + vy_xmid*cosphi[:,:,xmid]    
+
+                quant_zmid, quant_ymid, quant_xmid  =  vphi_zmid, vphi_ymid, vphi_xmid
+
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case "vz":
+                FigID = r'$v_z$'
+                vmin, vmax = -10, 10
+                norm = colors.SymLogNorm(vmin=vmin, vmax=vmax,linthresh=1e-3)
+
+                vz_xmid = tst['velz'][:,:,xmid]
+                vz_ymid = tst['velz'][:,ymid,:]
+                vz_zmid = tst['velz'][zmid,:,:]
+
+                quant_zmid, quant_ymid, quant_xmid  =  vz_zmid, vz_ymid, vz_xmid
+
                 return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
             case "sigma":
-                vmin, vmax = 1e-4, 1e3
+                FigID = r'$\sigma$'
+                vmin, vmax = 1e-4, 50
                 norm = colors.LogNorm(vmin=vmin, vmax=vmax)
+
+                b2_zmid = tst['bcc1'][zmid,:,:]**2 + tst['bcc2'][zmid,:,:]**2 + tst['bcc3'][zmid,:,:]**2
+                b2_ymid = tst['bcc1'][:,ymid,:]**2 + tst['bcc2'][:,ymid,:]**2 + tst['bcc3'][:,ymid,:]**2
+                b2_xmid = tst['bcc1'][:,:,xmid]**2 + tst['bcc2'][:,:,xmid]**2 + tst['bcc3'][:,:,xmid]**2
+
+                dens_zmid = tst['dens'][zmid,:,:]
+                dens_ymid = tst['dens'][:,ymid,:]
+                dens_xmid = tst['dens'][:,:,xmid]
+
+                quant_zmid = b2_zmid/(2*dens_zmid)
+                quant_ymid = b2_ymid/(2*dens_ymid)
+                quant_xmid = b2_xmid/(2*dens_xmid)
+
                 return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
             case "beta":
-                vmin, vmax = 1e-4, 1e3
+                FigID = r'$\beta$'
+                vmin, vmax = 1e-3, 1e3
                 norm = colors.LogNorm(vmin=vmin, vmax=vmax)
+
+                b2_zmid = tst['bcc1'][zmid,:,:]**2 + tst['bcc2'][zmid,:,:]**2 + tst['bcc3'][zmid,:,:]**2
+                b2_ymid = tst['bcc1'][:,ymid,:]**2 + tst['bcc2'][:,ymid,:]**2 + tst['bcc3'][:,ymid,:]**2
+                b2_xmid = tst['bcc1'][:,:,xmid]**2 + tst['bcc2'][:,:,xmid]**2 + tst['bcc3'][:,:,xmid]**2
+
+                press_zmid = tst['eint'][zmid,:,:]*(gamma-1.0)
+                press_ymid = tst['eint'][:,ymid,:]*(gamma-1.0)
+                press_xmid = tst['eint'][:,:,xmid]*(gamma-1.0)
+
+                quant_zmid = (2*press_zmid)/b2_zmid
+                quant_ymid = (2*press_ymid)/b2_ymid
+                quant_xmid = (2*press_xmid)/b2_xmid
+
                 return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
             case "total":
                 dmin, dmax = 1e-4, 1e3
                 norm_dens = colors.LogNorm(vmin=dmin, vmax=dmax)
                 bmin, bmax = 1e-4, 1e3
+
+                dens_zmid = tst['dens'][zmid,:,:]
+                dens_ymid = tst['dens'][:,ymid,:]
+                dens_xmid = tst['dens'][:,:,xmid]
+
+                press_zmid = tst['eint'][zmid,:,:]*(gamma-1.0)
+                press_ymid = tst['eint'][:,ymid,:]*(gamma-1.0)
+                press_xmid = tst['eint'][:,:,xmid]*(gamma-1.0)
+
+                bx_zmid = tst['bcc1'][zmid,:,:]
+                by_zmid = tst['bcc2'][zmid,:,:]
+                bz_zmid = tst['bcc3'][zmid,:,:]
+
+                bx_ymid = tst['bcc1'][:,ymid,:]
+                by_ymid = tst['bcc2'][:,ymid,:]
+                bz_ymid = tst['bcc3'][:,ymid,:]
+
+                bx_xmid = tst['bcc1'][:,:,xmid]
+                by_xmid = tst['bcc2'][:,:,xmid]
+                bz_xmid = tst['bcc3'][:,:,xmid]
+
+                vx_zmid = tst['velx'][zmid,:,:]
+                vy_zmid = tst['vely'][zmid,:,:]
+                vz_zmid = tst['velz'][zmid,:,:]
+
+                vx_ymid = tst['velx'][:,ymid,:]
+                vy_ymid = tst['vely'][:,ymid,:]
+                vz_ymid = tst['velz'][:,ymid,:]
+
+                vx_xmid = tst['velx'][:,:,xmid]
+                vy_xmid = tst['vely'][:,:,xmid]
+                vz_xmid = tst['velz'][:,:,xmid]
+
+                
 
                 return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
             case _:
@@ -155,50 +269,79 @@ def main(**kwargs):
     else:
         norm = norm
 
-    fig = plt.figure(figsize=(12.5, 12),dpi=75)
-    gs = GridSpec(nrows=3, ncols=5, wspace=0.1, hspace=0.1, width_ratios=[1,1,1,0.0,0.05], height_ratios=[1,1,1])
-    ax_fig = np.array([[fig.add_subplot(gs[j,i]) for i in range(3)] for j in range(3)])
-    # ax_fig = ax_fig.flatten()
-    ax_cbar = np.array([fig.add_subplot(gs[i,4]) for i in range(3)]).flatten()
+    if kwargs['quantity'] != 'total':
+        fig = plt.figure(figsize=(12.5, 12),dpi=75)
+        gs = GridSpec(nrows=3, ncols=5, wspace=0.1, hspace=0.1, width_ratios=[1,1,1,0.0,0.05], height_ratios=[1,1,1])
+        ax_fig = np.array([[fig.add_subplot(gs[j,i]) for i in range(3)] for j in range(3)])
+        # ax_fig = ax_fig.flatten()
+        ax_cbar = np.array([fig.add_subplot(gs[i,4]) for i in range(3)]).flatten()
 
-    RRange_list = np.array([Rfig/4,Rfig/2,Rfig])
-    for iRange,RRange in enumerate(RRange_list):
-        ax = ax_fig[iRange,:]
+        RRange_list = np.array([Rfig/4,Rfig/2,Rfig])
+        for iRange,RRange in enumerate(RRange_list):
+            ax = ax_fig[iRange,:]
 
-        axz = ax[0]
-        axy = ax[1]
-        axx = ax[2]
-        print(RRange)
-        Rticks = np.arange(-RRange+RRange/2,RRange,RRange/2)
-        Rticklabels = np.array([str(i) for i in Rticks])
+            axz = ax[0]
+            axy = ax[1]
+            axx = ax[2]
+            print(RRange)
+            Rticks = np.arange(-RRange+RRange/2,RRange,RRange/2)
+            Rticklabels = np.array([str(i) for i in Rticks])
 
-        imz = axz.pcolormesh(x_zmid[:,:],y_zmid[:,:],quant_zmid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{x-y \ plane}$')
-        imy = axy.pcolormesh(x_ymid[:,:],z_ymid[:,:],quant_ymid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{x-z \ plane}$')
-        imx = axx.pcolormesh(y_xmid[:,:],z_xmid[:,:],quant_xmid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{y-z \ plane}$')
+            imz = axz.pcolormesh(x_zmid[:,:],y_zmid[:,:],quant_zmid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{x-y \ plane}$')
+            imy = axy.pcolormesh(x_ymid[:,:],z_ymid[:,:],quant_ymid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{x-z \ plane}$')
+            imx = axx.pcolormesh(y_xmid[:,:],z_xmid[:,:],quant_xmid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{y-z \ plane}$')
 
-        patchz = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{x-y \ plane}$')
-        patchy = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{x-z \ plane}$')
-        patchx = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{y-z \ plane}$')
+            patchz = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{x-y \ plane}$')
+            patchy = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{x-z \ plane}$')
+            patchx = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{y-z \ plane}$')
 
-        axx.legend(handles=[patchz],loc='upper right',frameon=False,fontsize=10,labelcolor='black')
-        axy.legend(handles=[patchy],loc='upper right',frameon=False,fontsize=10,labelcolor='black')
-        axz.legend(handles=[patchx],loc='upper right',frameon=False,fontsize=10,labelcolor='black')
+            axx.legend(handles=[patchz],loc='upper right',frameon=False,fontsize=10,labelcolor='black')
+            axy.legend(handles=[patchy],loc='upper right',frameon=False,fontsize=10,labelcolor='black')
+            axz.legend(handles=[patchx],loc='upper right',frameon=False,fontsize=10,labelcolor='black')
 
-        for idirec in range(3):
-            ax[idirec].set_xlim(-RRange,RRange)
-            ax[idirec].set_ylim(-RRange,RRange)
+            for idirec in range(3):
+                ax[idirec].set_xlim(-RRange,RRange)
+                ax[idirec].set_ylim(-RRange,RRange)
 
-            ax[idirec].set_xticks(Rticks)
-            # ax[idirec].set_xticklabels([])
-            ax[idirec].set_yticks(Rticks)
-            ax[idirec].set_yticklabels([])
-            ax[idirec].set_aspect("equal")
+                ax[idirec].set_xticks(Rticks)
+                # ax[idirec].set_xticklabels([])
+                ax[idirec].set_yticks(Rticks)
+                ax[idirec].set_yticklabels([])
+                ax[idirec].set_aspect("equal")
 
-        cax1 = ax_cbar[iRange]
-        cax1.tick_params(which='major',direction='in',labelsize=13,length=7.5,labelleft=True,labelright=False)
-        cax1.tick_params(which='minor',direction='in')
-        cax1.yaxis.set_minor_locator(mticker.MultipleLocator(0.5))
-        colorbar1 = plt.colorbar(imz,cax=cax1)
+            cax1 = ax_cbar[iRange]
+            cax1.tick_params(which='major',direction='in',labelsize=13,length=7.5,labelleft=True,labelright=False)
+            cax1.tick_params(which='minor',direction='in')
+            cax1.yaxis.set_minor_locator(mticker.MultipleLocator(0.5))
+            colorbar1 = plt.colorbar(imz,cax=cax1)
+    else:
+        fig = plt.figure(figsize=(12.5, 12),dpi=75)
+        # gs = GridSpec(nrows=3, ncols=5, wspace=0.1, hspace=0.1, width_ratios=[1,1,1,0.0,0.05], height_ratios=[1,1,1])
+        # ax_fig = np.array([[fig.add_subplot(gs[j,i]) for i in range(3)] for j in range(3)])
+        # # ax_fig = ax_fig.flatten()
+        # ax_cbar = np.array([fig.add_subplot(gs[i,4]) for i in range(3)]).flatten()
+
+        # RRange_list = np.array([Rfig/4,Rfig/2,Rfig])
+        # for iRange,RRange in enumerate(RRange_list):
+        #     ax = ax_fig[iRange,:]
+
+        #     axz = ax[0]
+        #     axy = ax[1]
+        #     axx = ax[2]
+        #     print(RRange)
+        #     Rticks = np.arange(-RRange+RRange/2,RRange,RRange/2)
+        #     Rticklabels = np.array([str(i) for i in Rticks])
+
+        #     imz = axz.pcolormesh(x_zmid[:,:],y_zmid[:,:],quant_zmid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{x-y \ plane}$')
+        #     imy = axy.pcolormesh(x_ymid[:,:],z_ymid[:,:],quant_ymid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{x-z \ plane}$')
+        #     imx = axx.pcolormesh(y_xmid[:,:],z_xmid[:,:],quant_xmid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{y-z \ plane}$')
+
+        #     patchz = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{x-y \ plane}$')
+        #     patchy = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{x-z \ plane}$')
+        #     patchx = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{y-z \ plane}$')
+
+        #     axx.legend(handles=[patchz],loc
+
 
 
     plt.savefig(kwargs['output_file'],dpi=250)
@@ -226,7 +369,7 @@ if __name__ == '__main__':
                               '--vmax=<val> if <val> has negative sign'))
     parser.add_argument('quantity',
                         help=('name of quantity to be plotted; choose between '
-                             ' dens, eint, bcc1, bcc2, bcc3, velx, vely, velz'))
+                             ' dens, eint, beta, sigma, br, bphi, bz, vr, vphi, vz'))
     parser.add_argument('-c',
                         '--colormap',
                         default=None,
@@ -239,6 +382,10 @@ if __name__ == '__main__':
                         type=float,
                         default=10.0,
                         help=('maximum radius to be plotted'))
+    parser.add_argument('--gamma',
+                        type=float,
+                        default=5/3,
+                        help=('ratio of specific heats'))
 #     parser.add_argument('-d', '--direction',
 #                         type=int,
 #                         choices=(1, 2, 3),
