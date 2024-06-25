@@ -1,45 +1,4 @@
-# %% [markdown]
-# ## Quick Look Snapshoot
-
-# %%
-# %load_ext autoreload
-# %autoreload 2
-
-import os
-import glob
-import pathlib
-import sys
-import argparse
-import warnings
-import h5py
-import numpy as np
-import yt
-import matplotlib
-import time
-import scipy
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-import matplotlib.patches as mpatches
-import matplotlib.ticker as mticker
-from matplotlib import rcParams
-import multiprocessing
-from multiprocessing import Process, Lock, Array
-from pathlib import Path
-
-sys.path.append("/Users/hyw/erm/ppscript/vis/python/") # local
-sys.path.append("/home/haiyangw/vis/python/") # server: anta
-
-import bin_convert as bc
-
-sys.path.append("/home/emost/codes/athenak/vis/python/") # server: anta
-import athena_read
-
-plt.style.use('ncr-paper.mplstyle')
-# plt.rcParams.update({
-#     "text.usetex": True,
-#     "font.family": "sans-serif",
-#     "font.sans-serif": ["Computer Modern Sans Serif"]})
-
+from bbh_pack import *
 def main(**kwargs):
 
 # %%
@@ -70,126 +29,177 @@ def main(**kwargs):
     # tstathdf = '/Users/hyw/24.6.1-test/cbd.mhd_w_bcc.00008.athdf'
     # tstathdf = '/Users/hyw/athenak/hydro-test/src/testmb/lowreso/cbd.mhd_w_bcc.00215.athdf'
     
-    Rfig=20.0
-    tst_athdf = athena_read.athdf(filename=tstathdf,x1_min=-Rfig,x1_max=Rfig, x2_min=-Rfig, x2_max=Rfig, x3_min=-Rfig, x3_max=Rfig)
-    tst_athdf.keys()
-    
-    # %%
-    tst = tst_athdf
-    
-    # initialize the data (read-in)
+    Rfig=kwargs['rmax'] #the limit of anta mem
+    tst = athena_read.athdf(filename=tstathdf,x1_min=-Rfig,x1_max=Rfig, x2_min=-Rfig, x2_max=Rfig, x3_min=-Rfig, x3_max=Rfig)
+    tst.keys()
     # time = tst['time']
-    xdat = tst['x1v']
-    ydat = tst['x2v']
-    zdat = tst['x3v']
-    dens = tst['dens']
-    eint = tst['eint']
-    bcc1 = tst['bcc1']
-    bcc2 = tst['bcc2']
-    bcc3 = tst['bcc3']
-    vx = tst['velx']
-    vy = tst['vely']
-    vz = tst['velz']
-    
+
+    # construct the meshgrid
+    xdat , ydat , zdat = tst['x1v'], tst['x2v'], tst['x3v']
     z, y, x = np.meshgrid(zdat, ydat, xdat, indexing='ij')
+    rad = np.sqrt(x**2 + y**2)
+    cosphi, sinphi = x/rad, y/rad
     print('shape of the data is: ', np.shape(x))
-    
     nx, ny, nz = np.shape(x)
+    zmid , ymid , xmid = nz//2, ny//2, nx//2
+
+    # setting up the vmin, vmax, FigID, and colormap from the quantity
+    # dens, eint, bcc1, bcc2, bcc3, velx, vely, velz
+    def select_case(input):
+        match input:
+            case "dens":
+                FigID = r'$\rho$'
+                vmin, vmax = 1e-5,1.0
+                norm = colors.LogNorm(vmin=vmin, vmax=vmax)
+
+                quant_zmid, quant_ymid, quant_xmid  =  tst['dens'][zmid,:,:], tst['dens'][:,ymid,:], tst['dens'][:,:,xmid]
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case "eint":
+                FigID = r'$e_{\mathrm{int}}$'
+                vmin, vmax = 1e-5,1.0
+                norm = colors.LogNorm(vmin=vmin, vmax=vmax)
+
+                quant_zmid, quant_ymid, quant_xmid  =  tst['eint'][zmid,:,:], tst['eint'][:,ymid,:], tst['eint'][:,:,xmid]
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case "br":
+                FigID = r'$B_r$'
+                vmin, vmax = -1,1
+                norm = colors.Normalize(vmin=vmin, vmax=vmax)
+
+                bx_zmid = tst['bcc1'][zmid,:,:]
+                by_zmid = tst['bcc2'][zmid,:,:]
+
+                bx_ymid = tst['bcc1'][:,ymid,:]
+                by_ymid = tst['bcc2'][:,ymid,:]
+
+                bx_xmid = tst['bcc1'][:,:,xmid]
+                by_xmid = tst['bcc2'][:,:,xmid]
+
+                br_zmid = bx_zmid*cosphi[zmid,:,:] + by_zmid*sinphi[zmid,:,:]   
+                br_ymid = bx_ymid*cosphi[:,ymid,:] + by_ymid*sinphi[:,ymid,:]
+                br_xmid = bx_xmid*cosphi[:,:,xmid] + by_xmid*sinphi[:,:,xmid]
+
+                quant_zmid, quant_ymid, quant_xmid  =  br_zmid, br_ymid, br_xmid
+
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case "bphi":
+                FigID = r'$B_{\phi}$'
+                vmin, vmax = -1,1
+                norm = colors.Normalize(vmin=vmin, vmax=vmax)
+
+                bx_zmid = tst['bcc1'][zmid,:,:]
+                by_zmid = tst['bcc2'][zmid,:,:]
+                
+                bx_ymid = tst['bcc1'][:,ymid,:]
+                by_ymid = tst['bcc2'][:,ymid,:]
+
+                bx_xmid = tst['bcc1'][:,:,xmid]
+                by_xmid = tst['bcc2'][:,:,xmid]
+  
+                bphi_zmid = -bx_zmid*sinphi[zmid,:,:] + by_zmid*cosphi[zmid,:,:]
+                bphi_ymid = -bx_ymid*sinphi[:,ymid,:] + by_ymid*cosphi[:,ymid,:]
+                bphi_xmid = -bx_xmid*sinphi[:,:,xmid] + by_xmid*cosphi[:,:,xmid]
+
+                quant_zmid, quant_ymid, quant_xmid  =  bphi_zmid, bphi_ymid, bphi_xmid
+
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case "bz":
+                FigID = r'$B_z$'
+                vmin, vmax = -10,10
+                norm = colors.SymLogNorm(vmin=vmin, vmax=vmax,linthresh=1e-3)
+
+                bz_xmid = tst['bcc3'][:,:,xmid]
+                bz_ymid = tst['bcc3'][:,ymid,:]
+                bz_zmid = tst['bcc3'][zmid,:,:]
+
+                quant_zmid, quant_ymid, quant_xmid  =  bz_zmid, bz_ymid, bz_xmid
+
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case "vel":
+                vmin, vmax = 1e-5,1
+                norm = colors.Normalize(vmin=vmin, vmax=vmax)
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case "sigma":
+                vmin, vmax = 1e-4, 1e3
+                norm = colors.LogNorm(vmin=vmin, vmax=vmax)
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case "beta":
+                vmin, vmax = 1e-4, 1e3
+                norm = colors.LogNorm(vmin=vmin, vmax=vmax)
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case "total":
+                dmin, dmax = 1e-4, 1e3
+                norm_dens = colors.LogNorm(vmin=dmin, vmax=dmax)
+                bmin, bmax = 1e-4, 1e3
+
+                return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            case _:
+                return "Invalid case"
+
+    # reading in the data: quantity
+    # quant = tst[kwargs['quantity']]
     
+    FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid = select_case(kwargs['quantity'])
     
-    # index of the center of the domain (index truncation)
-    xs, xe, ys, ye, zs, ze = nx//4, nx//4*3, ny//4, ny//4*3, nz//4, nz//4*3
-    # xs, xe, ys, ye, zs, ze = nx//8*3, nx//8*5, ny//8*3, ny//8*5, nz//8*3, nz//8*5
-    # xs, xe, ys, ye, zs, ze = nx//16*7, nx//16*9, ny//16*7, ny//16*9, nz//16*7, nz//16*9
-    # xs, xe, ys, ye, zs, ze = nx//32*15, nx//32*17, ny//32*15, ny//32*17, nz//32*15, nz//32*17
-    # xs, xe, ys, ye, zs, ze = nx//64*31, nx//64*33, ny//64*31, ny//64*33, nz//64*31, nz//64*33   
-    # xs, xe, ys, ye, zs, ze = nx//128*63, nx//128*65, ny//128*63, ny//128*65, nz//128*63, nz//128*65
+    x_zmid, y_zmid = x[zmid,:,:], y[zmid,:,:]
+    x_ymid, z_ymid = x[:,ymid,:], z[:,ymid,:]
+    y_xmid, z_xmid = y[:,:,xmid], z[:,:,xmid]
     
-    nx_tst, ny_tst, nz_tst = xe-xs, ye-ys, ze-zs
-    
-    # truncated coordinates and mesh data
-    x_tst = x[xs:xe,ys:ye,zs:ze]
-    y_tst = y[xs:xe,ys:ye,zs:ze]
-    z_tst = z[xs:xe,ys:ye,zs:ze]
-    
-    xdat_tst = xdat[xs:xe]
-    ydat_tst = ydat[xs:xe]
-    zdat_tst = zdat[xs:xe]
-    
-    # truncate the data to only the inner region
-    dens_tst = dens[xs:xe,ys:ye,zs:ze]
-    eint_tst = eint[xs:xe,ys:ye,zs:ze]
-    bcc1_tst = bcc1[xs:xe,ys:ye,zs:ze]
-    bcc2_tst = bcc2[xs:xe,ys:ye,zs:ze]
-    bcc3_tst = bcc3[xs:xe,ys:ye,zs:ze]
-    vx_tst = vx[xs:xe,ys:ye,zs:ze]
-    vy_tst = vy[xs:xe,ys:ye,zs:ze]
-    vz_tst = vz[xs:xe,ys:ye,zs:ze]
-    
-    # reformulate the data into cyl coordinates
-    darray_tst = [dens_tst, eint_tst, bcc1_tst, bcc2_tst, bcc3_tst, vx_tst, vy_tst, vz_tst]
-    
-    print('shape of the truncated data is: ', np.shape(x_tst))
-    # print('rad array: ', rad)
-    
-    
-    # %%
-    from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-    
+    # def min_max(vmin_in, vmax_in):
+
+    # choosing the colormap
+    if kwargs['norm'] == 'logc':
+        norm = colors.LogNorm(vmin=vmin, vmax=vmax)
+    elif kwargs['norm'] == 'linear':   
+        norm = colors.Normalize(vmin=vmin, vmax=vmax)
+    else:
+        norm = norm
+
     fig = plt.figure(figsize=(12.5, 12),dpi=75)
     gs = GridSpec(nrows=3, ncols=5, wspace=0.1, hspace=0.1, width_ratios=[1,1,1,0.0,0.05], height_ratios=[1,1,1])
     ax_fig = np.array([[fig.add_subplot(gs[j,i]) for i in range(3)] for j in range(3)])
     # ax_fig = ax_fig.flatten()
     ax_cbar = np.array([fig.add_subplot(gs[i,4]) for i in range(3)]).flatten()
-    
-    zmid = nz_tst//2
-    ymid = ny_tst//2
-    xmid = nx_tst//2
-    
-    vmin,vmax = 1e-5,1.0
-    quant = dens_tst
-    FigID = r'$\rho$'
-    
-    RRange_list = np.array([2.5,5.0,10.0])
+
+    RRange_list = np.array([Rfig/4,Rfig/2,Rfig])
     for iRange,RRange in enumerate(RRange_list):
         ax = ax_fig[iRange,:]
-        
+
         axz = ax[0]
         axy = ax[1]
         axx = ax[2]
         print(RRange)
         Rticks = np.arange(-RRange+RRange/2,RRange,RRange/2)
         Rticklabels = np.array([str(i) for i in Rticks])
-        
-        imz = axz.pcolormesh(x_tst[zmid,:,:],y_tst[zmid,:,:],quant[zmid,:,:],cmap='RdBu_r',norm=colors.LogNorm(vmin=vmin, vmax=vmax),label=FigID+r' $\mathrm{x-y \ plane}$')
-        imy = axy.pcolormesh(x_tst[:,ymid,:],z_tst[:,ymid,:],quant[:,ymid,:],cmap='RdBu_r',norm=colors.LogNorm(vmin=vmin, vmax=vmax),label=FigID+r' $\mathrm{x-z \ plane}$')
-        imx = axx.pcolormesh(y_tst[:,:,xmid],z_tst[:,:,xmid],quant[:,:,xmid],cmap='RdBu_r',norm=colors.LogNorm(vmin=vmin, vmax=vmax),label=FigID+r' $\mathrm{y-z \ plane}$')
-        
+
+        imz = axz.pcolormesh(x_zmid[:,:],y_zmid[:,:],quant_zmid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{x-y \ plane}$')
+        imy = axy.pcolormesh(x_ymid[:,:],z_ymid[:,:],quant_ymid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{x-z \ plane}$')
+        imx = axx.pcolormesh(y_xmid[:,:],z_xmid[:,:],quant_xmid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{y-z \ plane}$')
+
         patchz = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{x-y \ plane}$')
         patchy = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{x-z \ plane}$')
         patchx = mpatches.Patch(color=None,alpha=0.0, label=FigID+r' $\mathrm{y-z \ plane}$')
-        
+
         axx.legend(handles=[patchz],loc='upper right',frameon=False,fontsize=10,labelcolor='black')
         axy.legend(handles=[patchy],loc='upper right',frameon=False,fontsize=10,labelcolor='black')
         axz.legend(handles=[patchx],loc='upper right',frameon=False,fontsize=10,labelcolor='black')
-        
+
         for idirec in range(3):
             ax[idirec].set_xlim(-RRange,RRange)
             ax[idirec].set_ylim(-RRange,RRange)
-    
+
             ax[idirec].set_xticks(Rticks)
             # ax[idirec].set_xticklabels([])
             ax[idirec].set_yticks(Rticks)
             ax[idirec].set_yticklabels([])
             ax[idirec].set_aspect("equal")
-    
+
         cax1 = ax_cbar[iRange]
         cax1.tick_params(which='major',direction='in',labelsize=13,length=7.5,labelleft=True,labelright=False)
         cax1.tick_params(which='minor',direction='in')
         cax1.yaxis.set_minor_locator(mticker.MultipleLocator(0.5))
         colorbar1 = plt.colorbar(imz,cax=cax1)
-    
+
 
     plt.savefig(kwargs['output_file'],dpi=250)
 
@@ -214,8 +224,21 @@ if __name__ == '__main__':
                         default=1.0, #None,
                         help=('data value to correspond to colormap maximum; use '
                               '--vmax=<val> if <val> has negative sign'))
-    # parser.add_argument('quantity',
-    #                     help='name of quantity to be plotted')
+    parser.add_argument('quantity',
+                        help=('name of quantity to be plotted; choose between '
+                             ' dens, eint, bcc1, bcc2, bcc3, velx, vely, velz'))
+    parser.add_argument('-c',
+                        '--colormap',
+                        default=None,
+                        help=('name of Matplotlib colormap to use instead of default'))
+    parser.add_argument('--norm',
+                        help=('flag indicating data should be colormapped logarithmically'
+                              ' default is chosen according to the quantity, but can be forced'
+                              ' to be: linear, logc'))
+    parser.add_argument('--rmax',
+                        type=float,
+                        default=10.0,
+                        help=('maximum radius to be plotted'))
 #     parser.add_argument('-d', '--direction',
 #                         type=int,
 #                         choices=(1, 2, 3),
@@ -260,10 +283,6 @@ if __name__ == '__main__':
 #                         action='store_true',
 #                         help='flag indicating image should fill plot area, even if this '
 #                              'distorts the aspect ratio')
-#     parser.add_argument('-c',
-#                         '--colormap',
-#                         default=None,
-#                         help=('name of Matplotlib colormap to use instead of default'))
 #     parser.add_argument('--logc',
 #                         action='store_true',
 #                         help='flag indicating data should be colormapped logarithmically')
