@@ -41,12 +41,18 @@ def main(**kwargs):
     z, y, x = np.meshgrid(zdat, ydat, xdat, indexing='ij')
     rad = np.sqrt(x**2 + y**2)
     cosphi, sinphi = x/rad, y/rad
+    
     print('shape of the data is: ', np.shape(x))
     nx, ny, nz = np.shape(x)
     zmid , ymid , xmid = nz//2, ny//2, nx//2
 
+    # handy array for slicing the data
+    cosphi_ = np.array([cosphi[zmid,:,:], cosphi[:,ymid,:], cosphi[:,:,xmid]])
+    sinphi_ = np.array([sinphi[zmid,:,:], sinphi[:,ymid,:], sinphi[:,:,xmid]])
+
     # setting up the vmin, vmax, FigID, and colormap from the quantity
     # dens, eint, bcc1, bcc2, bcc3, velx, vely, velz
+
     def select_case(input):
         match input:
             case "dens":
@@ -71,6 +77,7 @@ def main(**kwargs):
                 vmin, vmax = -10,10
                 norm = colors.SymLogNorm(vmin=vmin, vmax=vmax,linthresh=1e-3)
 
+                
                 bx_zmid = tst['bcc1'][zmid,:,:]
                 by_zmid = tst['bcc2'][zmid,:,:]
 
@@ -87,6 +94,27 @@ def main(**kwargs):
                 quant_zmid, quant_ymid, quant_xmid  =  br_zmid, br_ymid, br_xmid
 
                 return FigID, cmap, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
+            
+                # FigID = r'$B_r$'
+                # cmap = 'PuOr'
+                # vmin, vmax = -10,10
+                # norm = colors.SymLogNorm(vmin=vmin, vmax=vmax,linthresh=1e-3)
+                # FigInfo = [FigID, cmap, norm, vmin, vmax]
+
+                # b_zmid = np.array([tst['bcc1'][zmid,:,:], tst['bcc2'][zmid,:,:], tst['bcc3'][zmid,:,:]])
+                # b_ymid = np.array([tst['bcc1'][:,ymid,:], tst['bcc2'][:,ymid,:], tst['bcc3'][:,ymid,:]])
+                # b_xmid = np.array([tst['bcc1'][:,:,xmid], tst['bcc2'][:,:,xmid], tst['bcc3'][:,:,xmid]])
+
+                # b = np.array([b_zmid, b_ymid, b_xmid])
+                # br = b[]
+                # b[0]*cosphi_+b[1]*sinphi_ #radial component of the magnetic field in zmid, ymid, xmid
+ 
+
+                # br_zmid = b_zmid[0]*cosphi[zmid,:,:] + b_zmid[1]*sinphi[zmid,:,:]   
+                # br_ymid = b_ymid[0]*cosphi[:,ymid,:] + b_ymid[1]*sinphi[:,ymid,:]
+                # br_xmid = b_xmid[0]*cosphi[:,:,xmid] + b_xmid[1]*sinphi[:,:,xmid]
+
+                # return FigInfo, br
             case "bphi":
                 FigID = r'$B_{\phi}$'
                 cmap = 'PuOr'
@@ -223,7 +251,7 @@ def main(**kwargs):
                 quant_xmid = (2*press_xmid)/b2_xmid
 
                 return FigID, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
-            case "total":
+            case "total" | "total-vel" | "total-mag":
                 dens_min, dens_max = 1e-4, 1e3
                 dens_norm = colors.LogNorm(vmin=dens_min, vmax=dens_max)
                 dens_cmap = 'RdBu_r'
@@ -329,9 +357,9 @@ def main(**kwargs):
                 # quant_ymid = np.array([dens_ymid, press_ymid, b_ymid, v_ymid, beta_ymid, sigma_ymid,   br_ymid, bphi_ymid, bz_ymid, vr_ymid, vphi_ymid, vz_ymid])
                 # quant_zmid = np.array([dens_zmid, press_zmid, b_zmid, v_zmid, beta_zmid, sigma_zmid,   br_zmid, bphi_zmid, bz_zmid, vr_zmid, vphi_zmid, vz_zmid])
                 
-                quant_xmid = np.array([dens_xmid, press_xmid, bz_xmid, vz_xmid, beta_xmid, sigma_xmid,   br_xmid, bphi_xmid, bz_xmid, vr_xmid, vphi_xmid, vz_xmid])
-                quant_ymid = np.array([dens_ymid, press_ymid, bz_ymid, vz_ymid, beta_ymid, sigma_ymid,   br_ymid, bphi_ymid, bz_ymid, vr_ymid, vphi_ymid, vz_ymid])
-                quant_zmid = np.array([dens_zmid, press_zmid, bz_zmid, vz_zmid, beta_zmid, sigma_zmid,   br_zmid, bphi_zmid, bz_zmid, vr_zmid, vphi_zmid, vz_zmid])
+                quant_xmid = np.array([dens_xmid, press_xmid, bz_xmid, vz_xmid, beta_xmid, sigma_xmid,   br_xmid, bphi_xmid, bz_xmid, vr_xmid, vphi_xmid, vz_xmid, bx_xmid, by_xmid, bz_xmid, vx_xmid, vy_xmid, vz_xmid])    
+                quant_ymid = np.array([dens_ymid, press_ymid, bz_ymid, vz_ymid, beta_ymid, sigma_ymid,   br_ymid, bphi_ymid, bz_ymid, vr_ymid, vphi_ymid, vz_ymid, bx_ymid, by_ymid, bz_ymid, vx_ymid, vy_ymid, vz_ymid])    
+                quant_zmid = np.array([dens_zmid, press_zmid, bz_zmid, vz_zmid, beta_zmid, sigma_zmid,   br_zmid, bphi_zmid, bz_zmid, vr_zmid, vphi_zmid, vz_zmid, bx_zmid, by_zmid, bz_zmid, vx_zmid, vy_zmid, vz_zmid])    
                 
                 return FigID, cmap, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid
             case _:
@@ -352,7 +380,7 @@ def main(**kwargs):
     # else:
     #     norm = norm
 
-    if kwargs['quantity'] != 'total':
+    if kwargs['quantity'][:5] != 'total':
 
         FigID, cmap, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid = select_case(kwargs['quantity'])
 
@@ -400,7 +428,7 @@ def main(**kwargs):
             cax1.tick_params(which='minor',direction='in')
             cax1.yaxis.set_minor_locator(mticker.MultipleLocator(0.5))
             colorbar1 = plt.colorbar(imz,cax=cax1)
-    else:
+    elif kwargs['quantity'] == 'total':
         FigID, cmap, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid = select_case(kwargs['quantity'])
 
         fig = plt.figure(figsize=(12.25, 18),dpi=75)
@@ -450,6 +478,118 @@ def main(**kwargs):
                 cax1.tick_params(which='minor',direction='in')
                 cax1.yaxis.set_minor_locator(mticker.MultipleLocator(0.5))
                 colorbar1 = plt.colorbar(imz,cax=cax1)
+    elif kwargs['quantity'] == 'total-vel':
+        FigID, cmap, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid = select_case(kwargs['quantity'])
+
+        fig = plt.figure(figsize=(12.25, 9),dpi=75)
+
+        gs = GridSpec(nrows=3, ncols=6, wspace=0.1, hspace=0.1, width_ratios=[1,1,1,1,0.0,0.05], height_ratios=[1,1,1])
+        ax_fig = np.array([[fig.add_subplot(gs[j,i]) for i in range(4)] for j in range(3)])
+        # ax_fig = ax_fig.flatten()
+        ax_cbar = np.array([fig.add_subplot(gs[i,5]) for i in range(3)]).flatten()
+
+        RRange_list = np.array([Rfig/4,Rfig])
+
+        vel_comp = np.array([[16,15],[17,15]])
+
+        for iRange,RRange in enumerate(RRange_list):
+            for iq,iQ in enumerate([9,10,11]):
+                
+                axz = ax_fig[iq, 2*iRange]
+                axy = ax_fig[iq, 2*iRange+1]
+                ax = [axz, axy]
+
+                print(RRange)
+                Rticks = np.arange(-RRange+RRange/2,RRange,RRange/2)
+                Rticklabels = np.array([str(i) for i in Rticks])
+
+                imz = axz.pcolormesh(x_zmid[:,:],y_zmid[:,:],quant_zmid[iQ,:,:],cmap=cmap[iQ],norm=norm[iQ],label=FigID[iQ]+r' $\mathrm{x-y \ plane}$')
+                imy = axy.pcolormesh(x_ymid[:,:],z_ymid[:,:],quant_ymid[iQ,:,:],cmap=cmap[iQ],norm=norm[iQ],label=FigID[iQ]+r' $\mathrm{x-z \ plane}$')
+                # imx = axx.pcolormesh(y_xmid[:,:],z_xmid[:,:],q_xmid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{y-z \ plane}$')
+                
+                axz.streamplot(x_zmid[:,:],y_zmid[:,:],quant_zmid[15,:,:],quant_zmid[16,:,:],color='k',linewidth=0.6,arrowsize=0.6,density=1.5)
+                axy.streamplot(x_ymid[:,:],z_ymid[:,:],quant_ymid[15,:,:],quant_ymid[17,:,:],color='k',linewidth=0.6,arrowsize=0.6,density=1.5)
+
+                patchz = mpatches.Patch(color=None,alpha=0.0, label=FigID[iQ]+r' $\mathrm{x-y \ plane}$')
+                patchy = mpatches.Patch(color=None,alpha=0.0, label=FigID[iQ]+r' $\mathrm{x-z \ plane}$')
+
+
+
+
+                axz.legend(handles=[patchz],loc='upper right',frameon=False,fontsize=12,labelcolor='white')
+                axy.legend(handles=[patchy],loc='upper right',frameon=False,fontsize=12,labelcolor='white')
+
+                for idirec in range(2):
+                    ax[idirec].set_xlim(-RRange,RRange)
+                    ax[idirec].set_ylim(-RRange,RRange)
+
+                    ax[idirec].set_xticks(Rticks)
+                    ax[idirec].set_xticklabels(Rticklabels)
+                    ax[idirec].set_yticks(Rticks)
+                    ax[idirec].set_yticklabels([])
+                    ax[idirec].set_aspect("equal")
+
+                cax1 = ax_cbar[iq]
+                cax1.tick_params(which='major',direction='in',labelsize=13,length=7.5,labelleft=True,labelright=False)
+                cax1.tick_params(which='minor',direction='in')
+                cax1.yaxis.set_minor_locator(mticker.MultipleLocator(0.5))
+                colorbar1 = plt.colorbar(imz,cax=cax1)
+    elif kwargs['quantity'] == 'total-mag':
+        FigID, cmap, norm, vmin, vmax, quant_zmid, quant_ymid, quant_xmid = select_case(kwargs['quantity'])
+
+        fig = plt.figure(figsize=(12.25, 9),dpi=75)
+
+        gs = GridSpec(nrows=3, ncols=6, wspace=0.1, hspace=0.1, width_ratios=[1,1,1,1,0.0,0.05], height_ratios=[1,1,1])
+        ax_fig = np.array([[fig.add_subplot(gs[j,i]) for i in range(4)] for j in range(3)])
+        # ax_fig = ax_fig.flatten()
+        ax_cbar = np.array([fig.add_subplot(gs[i,5]) for i in range(3)]).flatten()
+
+        RRange_list = np.array([Rfig/4,Rfig])
+
+        vel_comp = np.array([[16,15],[17,15]])
+
+        for iRange,RRange in enumerate(RRange_list):
+            for iq,iQ in enumerate([6,7,8]):
+                
+                axz = ax_fig[iq, 2*iRange]
+                axy = ax_fig[iq, 2*iRange+1]
+                ax = [axz, axy]
+
+                print(RRange)
+                Rticks = np.arange(-RRange+RRange/2,RRange,RRange/2)
+                Rticklabels = np.array([str(i) for i in Rticks])
+
+                imz = axz.pcolormesh(x_zmid[:,:],y_zmid[:,:],quant_zmid[iQ,:,:],cmap=cmap[iQ],norm=norm[iQ],label=FigID[iQ]+r' $\mathrm{x-y \ plane}$')
+                imy = axy.pcolormesh(x_ymid[:,:],z_ymid[:,:],quant_ymid[iQ,:,:],cmap=cmap[iQ],norm=norm[iQ],label=FigID[iQ]+r' $\mathrm{x-z \ plane}$')
+                # imx = axx.pcolormesh(y_xmid[:,:],z_xmid[:,:],q_xmid[:,:],cmap='RdBu_r',norm=norm,label=FigID+r' $\mathrm{y-z \ plane}$')
+                
+                axz.streamplot(x_zmid[:,:],y_zmid[:,:],quant_zmid[12,:,:],quant_zmid[13,:,:],color='k',linewidth=0.6,arrowsize=0.6,density=1.5)
+                axy.streamplot(x_ymid[:,:],z_ymid[:,:],quant_ymid[12,:,:],quant_ymid[14,:,:],color='k',linewidth=0.6,arrowsize=0.6,density=1.5)
+
+                patchz = mpatches.Patch(color=None,alpha=0.0, label=FigID[iQ]+r' $\mathrm{x-y \ plane}$')
+                patchy = mpatches.Patch(color=None,alpha=0.0, label=FigID[iQ]+r' $\mathrm{x-z \ plane}$')
+
+
+
+
+                axz.legend(handles=[patchz],loc='upper right',frameon=False,fontsize=12,labelcolor='white')
+                axy.legend(handles=[patchy],loc='upper right',frameon=False,fontsize=12,labelcolor='white')
+
+                for idirec in range(2):
+                    ax[idirec].set_xlim(-RRange,RRange)
+                    ax[idirec].set_ylim(-RRange,RRange)
+
+                    ax[idirec].set_xticks(Rticks)
+                    ax[idirec].set_xticklabels(Rticklabels)
+                    ax[idirec].set_yticks(Rticks)
+                    ax[idirec].set_yticklabels([])
+                    ax[idirec].set_aspect("equal")
+
+                cax1 = ax_cbar[iq]
+                cax1.tick_params(which='major',direction='in',labelsize=13,length=7.5,labelleft=True,labelright=False)
+                cax1.tick_params(which='minor',direction='in')
+                cax1.yaxis.set_minor_locator(mticker.MultipleLocator(0.5))
+                colorbar1 = plt.colorbar(imz,cax=cax1)
  
 
 
@@ -490,7 +630,7 @@ if __name__ == '__main__':
                               ' to be: linear, logc'))
     parser.add_argument('--rmax',
                         type=float,
-                        default=10.0,
+                        default=20.0,
                         help=('maximum radius to be plotted'))
     parser.add_argument('--gamma',
                         type=float,
